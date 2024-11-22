@@ -4,6 +4,7 @@
 #include "core/memory/ModuleMgr.hpp"
 #include "core/memory/PatternScanner.hpp"
 #include "util/Joaat.hpp"
+#include "core/renderer/Renderer.hpp"
 
 namespace YimMenu
 {
@@ -49,6 +50,23 @@ namespace YimMenu
 			FixVectors = ptr.As<Functions::FixVectors>();
 		});
 
+		constexpr auto scriptThreadsPtrn = Pattern<"48 8D 0D ? ? ? ? E8 ? ? ? ? EB 0B 8B 0D">("ScriptThreads&RunScriptThreads");
+		scanner.Add(scriptThreadsPtrn, [this](PointerCalculator ptr) {
+			ScriptThreads    = ptr.Add(3).Rip().As<rage::atArray<rage::scrThread*>*>();
+			RunScriptThreads = ptr.Add(8).Rip().As<PVOID>();
+		});
+
+		constexpr auto currentScriptThreadPtrn = Pattern<"48 89 2D ? ? ? ? 48 89 2D ? ? ? ? 48 8B 04 F9">("CurrentScriptThread");
+		scanner.Add(currentScriptThreadPtrn, [this](PointerCalculator ptr) {
+			CurrentScriptThread = ptr.Add(3).Rip().As<rage::scrThread**>();
+		});
+
+		constexpr auto hwnd = Pattern<"4C 8B 05 ? ? ? ? 4C 8D 0D ? ? ? ? 48 89 54 24">("Hwnd");
+		scanner.Add(hwnd, [this](PointerCalculator ptr) {
+			Hwnd = *ptr.Add(3).Rip().As<HWND*>();
+			LOG(INFO) << "HWND: " << Hwnd;
+		});
+
 		if (!scanner.Scan())
 		{
 			LOG(FATAL) << "Some patterns could not be found, unloading.";
@@ -56,37 +74,26 @@ namespace YimMenu
 			return false;
 		}
 
-		if (!GetRendererInfo)
+		if (const auto& RendererInfo = GetRendererInfo(); RendererInfo)
 		{
-			LOG(FATAL) << "Failed to get rendering info, unloading.";
-
-			return false;
+			if (RendererInfo->is_rendering_type(eRenderingType::DX12))
+			{
+				IsVulkan = false;
+			}
+			else if (RendererInfo->is_rendering_type(eRenderingType::Vulkan))
+			{
+				IsVulkan = true;
+			}
+			else
+			{
+				LOG(INFO) << "Unknown renderer type!";
+				return false;
+			}
 		}
 		else
 		{
-			RenderingInfo* info{ GetRendererInfo() };
-			if (!info->is_rendering_type(eRenderingType::DX12))
-			{
-				LOG(FATAL) << "Unsupported rendering type, unloading.";
-
-				return false;
-			}
-		}
-
-		if (auto swapchain = *SwapChain)
-		{
-			if (auto result = swapchain->GetHwnd(&Hwnd); result < 0)
-			{
-				LOG(FATAL) << "Failed to grab game window from swapchain [" << result << "], unloading.";
-
-				return false;
-			}
-			else if (!Hwnd)
-			{
-				LOG(FATAL) << "Game window is invalid, unloading.";
-
-				return false;
-			}
+			LOG(INFO) << "Invalid renderer info!";
+			return false;
 		}
 
 		return true;

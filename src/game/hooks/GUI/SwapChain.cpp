@@ -3,13 +3,13 @@
 #include "game/hooks/Hooks.hpp"
 #include "core/hooking/DetourHook.hpp"
 
-namespace YimMenu
+namespace YimMenu::Hooks
 {
 	HRESULT SwapChain::Present(IDXGISwapChain1* that, UINT syncInterval, UINT flags)
 	{
 		if (g_Running && !Renderer::IsResizing())
 		{
-			Renderer::OnPresent();
+			Renderer::DX12OnPresent();
 		}
 
 		return BaseHook::Get<SwapChain::Present, DetourHook<decltype(&Present)>>()->Original()(that, syncInterval, flags);
@@ -19,9 +19,9 @@ namespace YimMenu
 	{
 		if (g_Running)
 		{
-			Renderer::PreResize();
+			Renderer::DX12PreResize();
 			const auto result = BaseHook::Get<SwapChain::ResizeBuffers, DetourHook<decltype(&ResizeBuffers)>>()->Original()(that, bufferCount, width, height, newFormat, swapChainFlags);
-			Renderer::PostResize();
+			Renderer::DX12PostResize();
 			return result;
 		}
 		

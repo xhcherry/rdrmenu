@@ -1,3 +1,4 @@
+# HorseMenu
 
 A trainer for the popular horse riding game from Rockstar Games.
 

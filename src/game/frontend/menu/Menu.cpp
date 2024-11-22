@@ -1,53 +1,72 @@
-#include "Menu.hpp"
+#include "game/frontend/menu/Menu.hpp"
 
-#include "core/memory/ModuleMgr.hpp"
-#include "game/pointers/Pointers.hpp"
-#include "util/Joaat.hpp"
-#include "game/rdr/natives.hpp"
-#include "core/filemgr/FileMgr.hpp"
+#include "core/renderer/Renderer.hpp"
+#include "game/frontend/menu/self/Self.hpp"
+#include "game/frontend/menu/settings/Settings.hpp"
 
 namespace YimMenu
 {
-	void Menu::Main()
+	void Menu::Init()
 	{
-		if (!GUI::IsOpen())
-			return;
+		static auto SelfSubmenu = std::make_shared<Self>();
+		SelfSubmenu->LoadSubmenus(); //Loads mini submenus into memory.
 
-		if (ImGui::Begin("Test"))
-		{
-			if (ImGui::Button("Suicide"))
-			{
-				auto player_ped = PLAYER::PLAYER_PED_ID();
-				ENTITY::SET_ENTITY_HEALTH(player_ped, 0, 0);
-			}
+		static auto SettingsSubmenu = std::make_shared<Settings>();
+		SettingsSubmenu->LoadSubmenus(); //Loads mini submenus into memory.
 
-			if (ImGui::Button("Get Coords"))
-			{ 
-				auto coords = ENTITY::GET_ENTITY_COORDS(PLAYER::PLAYER_PED_ID(), false, false);
+		Renderer::AddRendererCallBack(
+		    [&] {
+			    if (!GUI::IsOpen())
+				    return;
 
-				LOG(INFO) << coords.x << "x\t" << coords.y << "y\t" << coords.z << "z";
-			}
+			    //Think this add HTML&PHP with no CSS. Lol just for testing.
 
-			if (ImGui::Button("Dump Entrypoints"))
-			{
-				DWORD64 base_address = (DWORD64)GetModuleHandleA(0);
+			    ImGui::SetNextWindowSize(ImVec2(610, 610 /*add auto resize*/), ImGuiCond_Once);
+			    if (ImGui::Begin("HorseMenu"))
+			    {
+				    const auto& Pos = ImGui::GetCursorPos();
 
-				const auto file_path = FileMgr::GetProjectFile("./entrypoints.txt");
-				auto file            = std::ofstream(file_path.Path(), std::ios::out | std::ios::trunc);
+				    if (ImGui::Button("Unload"))
+					    g_Running = false;
 
-				for (auto& entry : g_Crossmap)
-				{
-					auto address = Pointers.GetNativeHandler(entry);
+				    if (!g_SubmenuHandler.GetActiveSubmenu())
+					    g_SubmenuHandler.SetActiveSubmenu(SelfSubmenu);
 
-					file << std::hex << std::uppercase << "0x" << entry << " : RDR2.exe + 0x" << (DWORD64)address - base_address << std::endl;
-				}
+				    if (ImGui::BeginChild("##submenus", ImVec2(120, 0), true))
+				    {
+					    //Arguably the only place this file should be edited at for more menus
 
-				file.close();
-			}
+					    g_SubmenuHandler.SubmenuOption("L" /*Logo Font*/, "Self", SelfSubmenu); //Ideally with the logo you'd have them squares that fit perfectly.
+					    g_SubmenuHandler.SubmenuOption("L" /*Logo Font*/, "Settings", SettingsSubmenu);
+				    }
+				    ImGui::EndChild(); //Good practice to call endchild after the brackets
 
-			if (ImGui::Button("Unload"))
-				g_Running = false;
-		}
-		ImGui::End();
+				    ImGui::SetCursorPos(ImVec2(Pos.x + 130, Pos.y));
+
+				    if (ImGui::BeginChild("##minisubmenus", ImVec2(0, 50), true, ImGuiWindowFlags_NoScrollbar))
+				    {
+					    g_SubmenuHandler.RenderSubmenuCategories();
+				    }
+				    ImGui::EndChild();
+
+				    ImGui::SetCursorPos(ImVec2(Pos.x + 130, Pos.y + 60));
+
+				    if (ImGui::BeginChild("##options", ImVec2(0, 0), true))
+				    {
+					    auto ActiveSubmenu = g_SubmenuHandler.GetActiveSubmenu();
+
+					    if (ActiveSubmenu && g_SubmenuHandler.GetActiveSubmenuDefaultMiniSubmenu() && !g_SubmenuHandler.GetActiveSubmenuActiveMiniSubmenu())
+						    ActiveSubmenu.get()->SetActiveMiniSubmenu(ActiveSubmenu.get()->m_DefaultMiniSubmenu);
+
+					    g_SubmenuHandler.RenderActiveSubmenu();
+				    }
+				    ImGui::EndChild();
+
+				    ImGui::End();
+			    }
+		    },
+		    -1);
+
+		//Menu::ApplyTheme();
 	}
 }
