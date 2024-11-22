@@ -5,12 +5,12 @@ AlignConsecutiveAssignments: 'true'
 AlignEscapedNewlines: Left
 AlignOperands: 'false'
 AlignTrailingComments: 'true'
-AllowAllArgumentsOnNextLine: 'true'
+AllowAllArgumentsOnNextLine: 'false'
 AllowAllConstructorInitializersOnNextLine: 'false'
 AllowAllParametersOfDeclarationOnNextLine: 'false'
-AllowShortBlocksOnASingleLine: 'true'
+AllowShortBlocksOnASingleLine: 'false'
 AllowShortCaseLabelsOnASingleLine: 'true'
-AllowShortFunctionsOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: None
 AlwaysBreakAfterReturnType: None
@@ -19,6 +19,7 @@ AlwaysBreakTemplateDeclarations: 'Yes'
 BinPackArguments: 'false'
 BinPackParameters: 'true'
 BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Allman
 BreakBeforeTernaryOperators: 'false'
 BreakConstructorInitializers: AfterColon
 BreakInheritanceList: AfterColon

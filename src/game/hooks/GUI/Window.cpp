@@ -13,16 +13,16 @@ namespace YimMenu
 		if (umsg == WM_KEYUP && wparam == VK_DELETE) // fallback to unload
 			g_Running = false;
 
-		return CallWindowProcW(Window::OriginalWndProc, hwnd, umsg, wparam, lparam);
+		return BaseHook::Get<Window::WndProc, DetourHook<decltype(&WndProc)>>()->Original()(hwnd, umsg, wparam, lparam);
 	}
-
+	
 	BOOL Window::SetCursorPos(int x, int y)
 	{
 		if (GUI::IsOpen())
 		{
 			return true;
 		}
-
+		
 		return BaseHook::Get<Window::SetCursorPos, DetourHook<decltype(&SetCursorPos)>>()->Original()(x, y);
 	}
 }

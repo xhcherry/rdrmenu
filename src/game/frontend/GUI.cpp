@@ -1,12 +1,12 @@
 #include "GUI.hpp"
 
-#include "core/renderer/Renderer.hpp"
 #include "menu/Menu.hpp"
+#include "core/renderer/Renderer.hpp"
 
 namespace YimMenu
 {
 	GUI::GUI() :
-	    m_IsOpen(false)
+		m_IsOpen(false)
 	{
 		Renderer::AddDXCallback(Menu::Main, -1);
 		Renderer::AddWindowProcedureCallback([this](HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
@@ -20,7 +20,7 @@ namespace YimMenu
 
 	void GUI::ToggleMouse()
 	{
-		auto& io           = ImGui::GetIO();
+		auto& io = ImGui::GetIO();
 		io.MouseDrawCursor = GUI::IsOpen();
 		GUI::IsOpen() ? io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse : io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
 	}

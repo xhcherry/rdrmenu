@@ -9,10 +9,10 @@ namespace YimMenu
 {
 	bool Pointers::Init()
 	{
-		const auto rdr2 = ModuleMgr.Get("rdr2.exe"_J);
+		const auto rdr2 = ModuleMgr.Get("RDR2.exe"_J);
 		if (!rdr2)
 		{
-			LOG(FATAL) << "Could not find " << rdr2->Name() << ", is this rdr2?";
+			LOG(FATAL) << "Could not find RDR2.exe, is this RDR2?";
 
 			return false;
 		}
@@ -34,6 +34,21 @@ namespace YimMenu
 			GetRendererInfo = ptr.Add(1).Rip().As<Functions::GetRendererInfo>();
 		});
 
+		constexpr auto wndProc = Pattern<"48 89 5C 24 ? 4C 89 4C 24 ? 48 89 4C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8B EC 48 83 EC 60">("WndProc");
+		scanner.Add(wndProc, [this](PointerCalculator ptr) {
+			WndProc = ptr.As<PVOID>();
+		});
+
+		constexpr auto getNativeHandlerPtrn = Pattern<"E8 ? ? ? ? 42 8B 9C FE">("GetNativeHandler");
+		scanner.Add(getNativeHandlerPtrn, [this](PointerCalculator ptr) {
+			GetNativeHandler = ptr.Add(1).Rip().As<Functions::GetNativeHandler>();
+		});
+
+		constexpr auto fixVectorsPtrn = Pattern<"8B 41 18 4C 8B C1 85">("FixVectors");
+		scanner.Add(fixVectorsPtrn, [this](PointerCalculator ptr) {
+			FixVectors = ptr.As<Functions::FixVectors>();
+		});
+
 		if (!scanner.Scan())
 		{
 			LOG(FATAL) << "Some patterns could not be found, unloading.";
@@ -49,7 +64,7 @@ namespace YimMenu
 		}
 		else
 		{
-			RenderingInfo* info{GetRendererInfo()};
+			RenderingInfo* info{ GetRendererInfo() };
 			if (!info->is_rendering_type(eRenderingType::DX12))
 			{
 				LOG(FATAL) << "Unsupported rendering type, unloading.";
